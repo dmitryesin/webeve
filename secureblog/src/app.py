@@ -47,6 +47,15 @@ def gen_acsrf():
     return str(uuid.uuid4())
 
 
+@secureblog_bp.before_request
+def check_acsrf():
+    if request.method == "POST":
+        if not session.get("acsrf") or request.form.get("acsrf") != session["acsrf"]:
+            return "Wrong Anti CSRF token!", 403
+    if not session.get("acsrf"):
+        session["acsrf"] = gen_acsrf()
+
+
 def get_posts():
     with get_db().cursor() as cur:
         cur.execute("SELECT text, login FROM post;")
@@ -106,11 +115,8 @@ def index():
 @secureblog_bp.route("/posts", methods=["POST"])
 def posts():
     if session.get("login") is not None:
-        if request.form["acsrf"] == session.get("acsrf"):
-            text = decorate_post(request.form["text"])
-            create_post(text, session["login"])
-        else:
-            print("Wrong Anti CSRF token!", flush=True)
+        text = decorate_post(request.form["text"])
+        create_post(text, session["login"])
     return redirect("/")
 
 
@@ -150,7 +156,7 @@ def login():
     return redirect("/") 
 
 
-@secureblog_bp.route("/logout", methods=["GET"])
+@secureblog_bp.route("/logout", methods=["POST"])
 def logout():
-    session.pop("login")
+    session.pop("login", None)
     return redirect("/")

@@ -3,6 +3,7 @@
 {% block body %}
     <h1>Registrate new user:</h1>
     <form action="/users" method="POST">
+        <input name="acsrf" type="hidden" value="{{ session.get('acsrf') }}" />
         <label>Login: </label>
         <input name="login" type="text" />
         <label>Password: </label>
